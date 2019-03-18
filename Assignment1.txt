@@ -1,0 +1,408 @@
+﻿Data Analytics 
+SESSION 12: Generalized Linear Models 
+Assignment 1 
+
+
+1. Use the given link below: https://archive.ics.uci.edu/ml/machine-learning-databases/communities/ 
+
+Perform the below operations: 
+
+a. Find out top 5 attributes having highest correlation (select only Numeric features). 
+b. Find out top 3 reasons for having more crime in a city. 
+c. Which all attributes have high correlation with crime rate? 
+
+
+Answer:
+
+install.package("Amelia")
+library(Amelia)
+Corre_att<-read.csv('C:/Users/Desktop/Corre_att.csv') 
+require(Amelia)
+
+library(Rcpp) 
+data<- Corre_att 
+data[4:10,3] <- rep(NA,7) 
+data[1:5,4] <- NA 
+data <- data[-c(5,6)] 
+
+summary(data)
+
+
+Output:
+
+## MI_PRINX offense_id rpt_date
+## Min. :8838438 Min. :1.608e+08 7/26/2017 : 106
+## 1st Qu.:8904204 1st Qu.:1.711e+08 10/16/2017: 103
+## Median :8910894 Median :1.720e+08 11/1/2017 : 103
+## Mean :8910851 Mean :6.523e+08 9/21/2017 : 101
+## 3rd Qu.:8917584 3rd Qu.:1.728e+08 11/28/2017: 100
+## Max. :8924410 Max. :1.730e+11 (Other) :26239
+## NA's : 7
+## occur_date poss_time beat apt_office_prefix
+## 11/17/2017: 110 8:00:00 : 526 Min. :101.0 :26213
+## 10/7/2017 : 106 7:00:00 : 430 1st Qu.:208.0 APT : 314
+## 8/19/2017 : 105 12:00:00: 426 Median :312.0 STE : 25
+## 10/28/2017: 102 10:00:00: 376 Mean :355.6 ROOM : 21
+## 10/31/2017: 99 9:00:00 : 376 3rd Qu.:505.0 BLDG : 12
+## (Other) :26232 16:00:00: 375 Max. :710.0 UNIT : 12
+## NA's : 5 (Other) :24250 (Other): 162 
+## apt_office_num location
+## :22133 1801 HOWELL MILL RD NW : 142
+## A : 120 3393 PEACHTREE RD NE @LENOX MALL : 140
+## B : 108 1275 CAROLINE ST NE @TARGET - CAROLINE : 136
+## 1 : 61 3393 PEACHTREE RD NE : 129
+## 2 : 48 835 MARTIN L KING JR DR NW : 108
+## 5 : 46 2841 GREENBRIAR PKWY SW @GREENBRIAR MALL: 95
+## (Other): 4243 (Other) :26009
+## MinOfucr MinOfibr_code dispo_code MaxOfnum_victims
+## Min. :110.0 2305 :9024 :22959 Min. : 0.00
+## 1st Qu.:521.0 2404 :2774 10 : 2893 1st Qu.: 1.00
+## Median :640.0 2303 :2486 20 : 632 Median : 1.00
+## Mean :598.8 2399 :1946 30 : 210 Mean : 1.16
+## 3rd Qu.:660.0 2202 :1802 40 : 36 3rd Qu.: 1.00
+## Max. :730.0 2308 :1381 60 : 20 Max. :27.00
+## (Other):7346 (Other): 9 NA's :75
+## Shift Avg.Day loc_type UC2.Literal
+## Day :6882 Sat :3713 Min. : 1.00 LARCENY-FROM VEHICLE:9840
+## Eve :9151 Sun :3569 1st Qu.:13.00 LARCENY-NON VEHICLE :6589
+## Morn:7014 Tue :3542 Median :18.00 AUTO THEFT :3197
+## Unk :3712 Wed :3539 Mean :20.76 BURGLARY-RESIDENCE :2635
+## Mon :3492 3rd Qu.:20.00 AGG ASSAULT :2024
+## Thu :3455 Max. :99.00 ROBBERY-PEDESTRIAN :1126
+## (Other):5449 NA's :3344 (Other) :1348
+## neighborhood npu x
+## Downtown : 1828 M : 3077 Min. :-84.55
+## Midtown : 1410 E : 2742 1st Qu.:-84.43
+## : 1185 B : 2716 Median :-84.40
+## Old Fourth Ward : 697 D : 1281 Mean :-83.69
+## Lindbergh/Morosgo: 595 V : 1281 3rd Qu.:-84.37
+## West End : 571 T : 1140 Max. : 0.00
+## (Other) :20473 (Other):14522
+## y
+## Min. : 0.00
+## 1st Qu.:33.73
+## Median :33.76
+## Mean :33.47
+## 3rd Qu.:33.79
+## Max. :33.88
+## 
+
+
+str(Corre_attr)
+
+## 'data.frame': 26759 obs. of 23 variables:
+## $ MI_PRINX : int 8924155 8924156 8924157 8924158 8924159 8924160
+8924161 8924162 8924163 8924164 ...
+## $ offense_id : num 1.74e+08 1.74e+08 1.74e+08 1.74e+08 1.74e+08 ..
+.
+## $ rpt_date : Factor w/ 365 levels "1/1/2017","1/10/2017",..: 117
+117 117 117 117 117 117 117 117 117 ...
+## $ occur_date : Factor w/ 471 levels "1/1/2008","1/1/2015",..: 174 1
+45 174 174 176 174 176 176 174 176 ...
+## $ occur_time : Factor w/ 1355 levels "","0:00:00","0:01:00",..: 955
+290 883 763 43 940 112 2 2 2 ...
+## $ poss_date : Factor w/ 412 levels "1/1/2015","1/1/2017",..: 147 1
+45 147 147 147 147 147 147 147 147 ...
+## $ poss_time : Factor w/ 1434 levels "","0:00:00","0:01:00",..: 32
+902 62 68 50 88 121 722 1024 1056 ...
+## $ beat : int 510 501 303 507 409 612 605 603 605 304 ...
+## $ apt_office_prefix: Factor w/ 88 levels "","#8","1","10",..: 1 1 1 1 1 1
+1 1 1 1 ...
+## $ apt_office_num : Factor w/ 2044 levels "","#5","]","`",..: 1 1 1 1 1
+1 213 1 1 1372 ...
+## $ location : Factor w/ 13865 levels ": 565 Main St NE",..: 9394 1
+133 10955 7860 5557 1525 8250 9706 9456 455 ...
+## $ MinOfucr : int 640 640 640 640 640 650 311 640 640 531 ...
+## $ MinOfibr_code : Factor w/ 68 levels "","1101","1101A",..: 51 51 51 5
+1 51 50 30 51 51 42 ...
+## $ dispo_code : Factor w/ 8 levels "","10","20","30",..: 1 1 1 1 1 1
+1 1 1 1 ...
+## $ MaxOfnum_victims : int 2 1 1 1 2 1 1 1 1 1 ...
+## $ Shift : Factor w/ 4 levels "Day","Eve","Morn",..: 3 4 3 2 3
+3 3 3 4 3 ...
+## $ Avg.Day : Factor w/ 8 levels "Fri","Mon","Sat",..: 3 7 3 3 4 4
+4 4 3 4 ...
+## $ loc_type : int 13 13 18 18 18 18 26 18 13 26 ...
+## $ UC2.Literal : Factor w/ 11 levels "AGG ASSAULT",..: 6 6 6 6 6 6 10
+6 6 4 ...
+## $ neighborhood : Factor w/ 239 levels "","Adair Park",..: 80 117 145
+64 3 83 103 164 103 175 ...
+## $ npu : Factor w/ 26 levels "","A","B","C",..: 14 6 22 14 19
+23 23 14 23 22 ...
+## $ x : num -84.4 -84.4 -84.4 -84.4 -84.5 ...
+
+
+
+library(car)
+
+
+## Loading required package: carData
+fit<-lm(beat~MinOfucr+ MaxOfnum_victims+loc_type+neighborhood+x+y,data =COBR
+A_YTD2017)
+fit
+##
+## Call:
+## lm(formula = beat ~ MinOfucr + MaxOfnum_victims + loc_type +
+## neighborhood + x + y, data = COBRA_YTD2017)
+##
+## Coefficients:
+## (Intercept)
+## 3.088e+02 
+
+
+summary(fit)
+##
+## Call:
+## lm(formula = beat ~ MinOfucr + MaxOfnum_victims + loc_type +
+## neighborhood + x + y, data = COBRA_YTD2017)
+##
+## Residuals:
+## Min 1Q Median 3Q Max
+## -529.44 -5.40 0.22 6.06 414.65
+##
+## Coefficients:
+## Estimate Std. Error t value
+## (Intercept) 3.088e+02 3.606e+00 85.642
+
+
+neighborhoodSwallow Circle/Baywood 9.42e-16 ***
+## neighborhoodSweet Auburn < 2e-16 ***
+## neighborhoodSylvan Hills < 2e-16 ***
+## neighborhoodTampa Park 2.60e-07 ***
+## neighborhoodThe Villages at Carver < 2e-16 ***
+## neighborhoodThe Villages at Castleberry H < 2e-16 ***
+## neighborhoodThe Villages at East Lake < 2e-16 ***
+## neighborhoodThomasville Heights < 2e-16 ***
+## neighborhoodTuxedo Park 8.30e-11 ***
+## neighborhoodUnderwood Hills < 2e-16 ***
+## neighborhoodVenetian Hills 0.397000
+## neighborhoodVine City < 2e-16 ***
+## neighborhoodVirginia Highland < 2e-16 ***
+## neighborhoodWashington Park < 2e-16 ***
+## neighborhoodWesley Battle 0.606691
+## neighborhoodWest End < 2e-16 ***
+## neighborhoodWest Highlands < 2e-16 ***
+## neighborhoodWest Lake < 2e-16 ***
+## neighborhoodWest Manor 0.838127
+## neighborhoodWest Paces Ferry/Northside 7.23e-10 ***
+## neighborhoodWesthaven < 2e-16 ***
+## neighborhoodWestminster/Milmar 0.405328
+## neighborhoodWestover Plantation 0.389368
+## neighborhoodWestview < 2e-16 ***
+## neighborhoodWestwood Terrace 0.000101 ***
+## neighborhoodWhitewater Creek 0.000153 ***
+## neighborhoodWhittier Mill Village < 2e-16 ***
+## neighborhoodWildwood (NPU-C) 3.98e-06 ***
+## neighborhoodWildwood (NPU-H) 0.931892
+## neighborhoodWildwood Forest 8.47e-09 ***
+## neighborhoodWilson Mill Meadows 0.121980
+## neighborhoodWisteria Gardens 0.017168 *
+## neighborhoodWoodfield 0.943692
+## neighborhoodWoodland Hills < 2e-16 ***
+## neighborhoodWyngate 0.098731 .
+## x < 2e-16 ***
+## y < 2e-16 ***
+## ---
+## Signif. codes: 0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+##
+## Residual standard error: 39.41 on 23172 degrees of freedom
+## (3344 observations deleted due to missingness)
+## Multiple R-squared: 0.9464, Adjusted R-squared: 0.9459
+## F-statistic: 1692 on 242 and 23172 DF, p-value: < 2.2e-16
+
+
+vif(fit)
+
+
+## GVIF Df GVIF^(1/(2*Df))
+## MinOfucr 1.171762 1 1.082480
+## MaxOfnum_victims 1.024168 1 1.012012
+## loc_type 1.026056 1 1.012944
+## neighborhood 11.793507 237 1.005219
+## x 23807.337630 1 154.296266
+## y 23818.989658 1 154.334020
+
+➢ P-values are very important because, we can consider linear model to
+be statistically significant only.
+➢ When both these p-values are less that the pre-determined statistica
+l determined level, which is ideally 0.05.
+➢ This is visually interpreted by the significance stars at the end of
+the row.
+➢ The more stars beside the variable’s p-value, the more significant t
+he variable.
+When there is a p-value, there is a null and alternative hypothesis as
+sociated with it.
+Null and Alternate Hypothesis
+➢ In Linear regression, the Null Hypothesis is that the coefficients a
+ssociated with the variables is equal to zero.
+➢ The alternate hypothesis is that the coefficients are not equal to z
+ero.
+➢ There exists a relationship between the independent variable in ques
+tion and the dependent variable.
+
+
+
+ GVIF Df GVIF^(1/(2*Df))
+beat 18.615002 1 4.314511
+MaxOfnum_victims 1.016947 1 1.008438
+loc_type 1.027692 1 1.013752
+neighborhood 201.207857 237 1.011253
+x 37103.058286 1 192.621542
+y 37121.328278 1 192.668960
+
+
+
+Coefficient,Estimate, std.error,Tval
+
+&Pr(>|t|)
+neighborhoodIvan Hill 0.18995 31.7182 0.006 0.995222
+neighborhoodPomona Park -0.70578 70.67374 -0.01 0.992032
+neighborhoodEast Ardley Road 0.81515 57.71572 0.014 0.988731
+neighborhoodOrchard Knob 0.78361 17.60243 0.045 0.964492
+neighborhoodCascade Heights -0.54782 11.8724 -0.046 0.963197
+neighborhoodCollier Hills -1.57088 28.03153 -0.056 0.955311
+neighborhoodGreen Forest Acres 2.03632 35.43986 0.057 0.954181
+neighborhoodAmal Heights -1.74562 21.55404 -0.081 0.935452
+neighborhoodGlenrose Heights 0.69584 8.58791 0.081 0.935423
+neighborhoodScotts Crossing -1.25164 14.81232 -0.084 0.93266
+neighborhoodBrookwood 2.04586 18.16387 0.113 0.910322
+neighborhoodBuckhead Heights 1.97872 17.55909 0.113 0.910278
+neighborhoodSandlewood Estates -3.36595 29.18066 -0.115 0.90817
+neighborhoodHeritage Valley 2.94675 25.26591 0.117 0.907155
+neighborhoodMt. Paran/Northside -3.01141 24.97503 -0.121 0.904027
+neighborhoodPolar Rock 2.54844 18.58454 0.137 0.890932
+neighborhoodArden/Habersham 6.64751 44.94562 0.148 0.882422
+neighborhoodMozley Park -1.87526 11.56441 -0.162 0.871183
+neighborhoodRidgedale Park 3.38582 20.30795 0.167 0.867589
+neighborhoodFairburn -4.33549 20.49293 -0.212 0.832452
+neighborhoodNiskey Cove 15.94718 70.69396 0.226 0.82153
+neighborhoodAudobon Forest -5.97875 25.15904 -0.238 0.812164
+neighborhoodMeadowbrook Forest -8.17084 30.40992 -0.269 0.788171
+neighborhoodChosewood Park -3.06345 11.00551 -0.278 0.780741
+neighborhoodChastain Park 6.54934 22.77241 0.288 0.773656
+neighborhoodGreenbriar 1.99187 6.8906 0.289 0.77253
+neighborhoodCascade Green 12.02139 40.91864 0.294 0.768923
+neighborhoodPeyton Forest 9.89081 31.7177 0.312 0.755166
+neighborhoodMt. Paran Parkway 31.53809 100.0009 0.315 0.752477
+neighborhoodMonroe Heights 5.36775 16.82558 0.319 0.749712
+neighborhoodMarietta Street Artery -3.3602 10.18978 -0.33 0.741583
+neighborhoodAlmond Park 5.15041 15.58872 0.33 0.741106
+neighborhoodOld Fairburn Village 33.39344 99.87213 0.334 0.738109
+neighborhoodEnglish Park -8.81457 24.64719 -0.358 0.720624
+neighborhoodBeecher Hills -10.1116 27.86253 -0.363 0.716677
+neighborhoodFairburn Tell 37.84429 99.91444 0.379 0.704864
+neighborhoodFairway Acres 15.97263 41.04548 0.389 0.697173
+neighborhoodHorseshoe Community -27.5546 70.65781 -0.39 0.696561
+neighborhoodBrookhaven 13.62287 32.29803 0.422 0.673185
+neighborhoodHuntington 24.97747 57.91696 0.431 0.666281
+neighborhoodCabbagetown -7.00131 15.96335 -0.439 0.660965
+neighborhoodLake Claire -7.20788 16.14665 -0.446 0.655312
+neighborhoodDeerwood 11.11434 23.39644 0.475 0.63476
+neighborhoodOld Gordon 10.85688 22.39042 0.485 0.627759
+neighborhoodBen Hill Pines -19.9293 41.01709 -0.486 0.627059
+neighborhoodDixie Hills -5.46251 11.11481 -0.491 0.623104
+neighborhoodBakers Ferry -22.2155 44.75458 -0.496 0.619627
+neighborhoodGeorgia Tech 37.27899 70.77658 0.527 0.598397
+neighborhoodRebel Valley Forest -9.37548 17.73253 -0.529 0.597007
+neighborhoodPeachtree Park 7.34794 13.39376 0.549 0.583279
+neighborhoodFort McPherson -40.5911 70.64509 -0.575 0.56583
+
+
+lm(formula = MinOfucr ~ beat + MaxOfnum_victims + loc_type +
+ neighborhood + x + y, data = Corre_attr)
+Coefficients:
+ (Intercept)
+beat
+ 183.98780
+0.14243
+
+
+Call:
+lm(formula = MinOfucr ~ beat + MaxOfnum_victims + loc_type +
+ neighborhood + x + y, data = Corre_attr)
+Residuals:
+ Min 1Q Median 3Q Max
+-333.96 -36.06 21.83 61.68 438.6
+
+
+vif(fi)>5
+ GVIF Df GVIF^(1/(2*Df))
+beat TRUE FALSE FALSE
+MaxOfnum_victims FALSE FALSE FALSE
+loc_type TRUE TRUE FALSE
+neighborhood TRUE TRUE FALSE
+x TRUE FALSE TRUE
+y TRUE FALSE TRUE
+
+
+
+
+#b. Find out top 3 reasons for having more crime in a city.
+Which all attributes have correlation with crime rate?
+
+
+
+
+
+at$dayofWeek <- weekdays(as.Date(at$occur_date))
+at$hour <- sub(":.*", "", at$occur_time)
+at$hour <- as.numeric(at$hour)
+ggplot(aes(x = hour), data = at) + geom_histogram(bins = 24, color='white', fill='black') +
+ ggtitle('Histogram of Crime Time')
+#The crime time distribution appears bimodal with peaking around midnight and
+again at the noon, then again between 6pm and 8pm.
+#topCrimes_1 <- topCrimes %>% group_by(`UC2 Literal`,occur_time) %>%
+ #summarise(total = n())
+#ggplot(aes(x = occur_time, y = total), data = topCrimes_1) +
+ #geom_point(colour="blue", size=1) +
+
+
+
+
+ #geom_smooth(method="loess") +
+ #xlab('Hour(24 hour clock)') +
+# ylab('Number of Crimes') +
+ #ggtitle('Top Crimes Time of the Day') +
+ #facet_wrap(~`UC2 Literal`)
+
+
+#Downtown and midtown are the most common locations where crimes take
+place, followed by Old Fourth Ward and West End.
+larceny theft are the top crimes in Atlanta followed by
+aggravated assault
+kable(count(Corre_attr, loc_type, sort=TRUE), "html", col.names=c("Crime Type",
+"Frequency")) %>%
+kable_styling(bootstrap_options="striped", full_width=FALSE)
+Corre_attr %>%
+ group_by(days, loc_type) %>%
+ summarize(freq=n()) %>%
+ ggplot(aes(reorder(days, -freq), freq)) +
+ geom_bar(aes(fill=loc_type), position="dodge", stat="identity", width=0.8, color="black") +
+ xlab("Day of Week") +
+ ylab("Frequency") +
+ labs(fill="Crime Type") +
+ ggtitle("Crime by Day of the Week")
+kable
+#The data provides crime type frequency and crime by day of the week.#Among
+the high crime categories, larceny tend to increase on Fridays and Saturdays.
+while burglary residence generally occurred more often during the weekdays
+than the weekends. Auto theft were least reported on Thursdays and increase
+for the weekends.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
